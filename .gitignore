@@ -1,0 +1,28 @@
+# Browser profile & cache
+App/ui_browser_profile/
+ui_browser_profile/
+
+# Logs and locks
+App/ui_logs/
+ui_logs/
+*.log
+*.lock
+
+# Generated outputs
+Generate images/
+outputs/
+*.png
+
+# Local machine environment paths & python cache
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+App/venv_path.txt
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store

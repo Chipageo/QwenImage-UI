@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark"><title>Qwen · Image Studio</title>
+  <link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Qwen Image Studio"><span class="brand-mark">✳</span><span>Qwen<span class="brand-sub">IMAGE STUDIO</span></span></a>
+    <button id="new-chat" class="new-chat"><span>＋</span> New session</button>
+    <div class="side-caption">WORKSPACE</div>
+    <div class="active-nav"><span>◈</span> Image studio <span class="nav-dot"></span></div>
+    <div class="side-note">A space for your next idea.<br>Create from words, or start<br>with an image.</div>
+    <div class="sidebar-memory" id="sidebar-memory" title="Model memory optimization status">
+      <div class="memory-tag"><span class="badge-dot" id="sidebar-badge-dot"></span> CPU OFFLOAD</div>
+      <div class="memory-title" id="sidebar-memory-title">Memory Optimized</div>
+      <div class="memory-sub" id="sidebar-memory-sub">GPU offload active · bfloat16</div>
+    </div>
+    <div class="sidebar-bottom"><span class="model-icon">Q</span><div>Qwen-Image-2.1<small id="env-path" title="Active model environment">Local model · 7B visual core</small></div></div>
+  </aside>
+  <main>
+    <header>
+      <div class="header-left">
+        <span>Image studio <span class="header-tag">2.1</span></span>
+        <div class="header-toggle-wrap">
+          <span class="header-toggle-desc">CPU OFFLOAD</span>
+          <label class="switch-pill mini" title="Toggle CPU Offload on/off">
+            <input id="header-cpu-offload" type="checkbox" checked>
+            <span class="switch-slider">
+              <span class="switch-knob"></span>
+              <span class="switch-txt on-txt">ON</span>
+              <span class="switch-txt off-txt">OFF</span>
+            </span>
+          </label>
+        </div>
+        <button type="button" id="new-mobile" aria-label="New session" title="New session">＋</button>
+      </div>
+      <div class="hardware-stats" id="hardware-stats" aria-label="Hardware Monitor">
+        <div class="hw-item" id="hw-gpu" title="GPU: NVIDIA GeForce RTX 4090">
+          <span class="hw-icon">GPU</span>
+          <span class="hw-val" id="gpu-load">--%</span>
+          <span class="hw-temp cool" id="gpu-temp">--°C</span>
+          <span class="hw-sub" id="gpu-vram">-- / -- GB</span>
+        </div>
+        <div class="hw-divider"></div>
+        <div class="hw-item" id="hw-cpu" title="CPU Utilization">
+          <span class="hw-icon">CPU</span>
+          <span class="hw-val" id="cpu-load">--%</span>
+        </div>
+        <div class="hw-divider"></div>
+        <div class="hw-item" id="hw-ram" title="RAM Utilization">
+          <span class="hw-icon">RAM</span>
+          <span class="hw-val" id="ram-load">--%</span>
+          <span class="hw-sub" id="ram-val">-- / -- GB</span>
+        </div>
+      </div>
+      <div id="connection" role="status"><span class="status-dot"></span><span id="connection-label">Connecting…</span></div>
+    </header>
+    <section id="conversation" aria-label="Generation history">
+      <div id="welcome">
+        <div class="eyebrow"><span></span> YOUR IDEAS, IN FOCUS</div>
+        <h1>Make room for<br><span>imagination.</span></h1>
+        <p>Describe something new. Or drop in a few images<br class="desktop-break"> and give them a different story.</p>
+        <div class="suggestions">
+          <button data-prompt="A minimalist architectural photograph of a concrete house beside a still lake at dawn, soft natural light, warm interior glow."><span>↗</span><strong>Start with a scene</strong><small>Turn a description into an image</small></button>
+          <button id="reference-suggestion"><span>▧</span><strong>Reimagine an image</strong><small>Add up to 10 visual references</small></button>
+          <button data-prompt="A tiny ceramic astronaut, soft studio lighting, centered composition" data-transparent="true"><span>✧</span><strong>Create a cutout</strong><small>Explore transparent images</small></button>
+        </div>
+      </div>
+      <div id="messages" role="log" aria-label="Prompts and generated images"></div>
+    </section>
+    <div class="composer-wrap">
+      <div class="composer-inner">
+        <div id="error" role="alert" hidden></div>
+        <div class="settings">
+          <div class="scale-group" role="group" aria-label="Resolution scale">
+            <span class="scale-label">Scale</span>
+            <div class="scale-buttons" id="scale-buttons">
+              <button type="button" class="scale-btn" data-scale="512">512</button>
+              <button type="button" class="scale-btn" data-scale="1k">1K</button>
+              <button type="button" class="scale-btn active" data-scale="2k">2K</button>
+            </div>
+          </div>
+          <label>Ratio <select id="ratio" aria-label="Output aspect ratio"><option value="1:1">1:1 · 2048 × 2048</option></select></label>
+          <label>Steps <input id="steps" type="number" value="40" min="1" max="100" step="1" aria-label="Denoising steps"></label>
+          <div class="seed-group">
+            <label for="seed">Seed</label>
+            <input id="seed" type="number" value="42" min="0" max="4294967295" step="1" aria-label="Seed">
+            <label class="seed-random-label" title="Use random seed on each generation"><input id="seed-random" type="checkbox"> Random</label>
+          </div>
+          <label class="transparency"><input id="transparent" type="checkbox"> Transparent</label>
+        </div>
+        <form id="composer">
+          <div id="previews" aria-label="Attached reference images"></div>
+          <label class="sr-only" for="prompt">Describe your image or edits</label>
+          <textarea id="prompt" rows="2" maxlength="12000" placeholder="Describe your image, or the changes you have in mind…" required></textarea>
+          <div class="composer-toolbar">
+            <div class="composer-tools"><button type="button" id="attach" title="Attach images" aria-label="Attach reference images">＋</button><span id="mode-label">Text to image</span><span id="image-count">0 / 10</span></div>
+            <button id="generate" type="submit" disabled><span id="generate-label">Generate</span><span>↗</span></button>
+          </div>
+          <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden>
+        </form>
+        <p class="composer-note" id="composer-note">Drop images anywhere · PNG, JPG, WebP · Ctrl / ⌘ + Enter to generate</p>
+        <p class="session-note">Each request uses its prompt and attached images. Session history stays in this tab.</p>
+      </div>
+    </div>
+  </main>
+  <div id="drop-overlay" hidden><div><span>＋</span><h2>A new starting point.</h2><p>Drop up to 10 reference images</p></div></div>
+</body>
+</html>
