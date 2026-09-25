@@ -1,9 +1,9 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set "SCRIPT_DIR=%~dp0"
-set "APP_DIR=%SCRIPT_DIR%App"
-set "CONFIG_FILE=%APP_DIR%\venv_path.txt"
+set "APP_DIR=%~dp0"
+set "ROOT_DIR=%APP_DIR%..\"
+set "CONFIG_FILE=%APP_DIR%venv_path.txt"
 set "PYTHON_EXE="
 
 :: Allow user to re-select folder by running: start-ui.cmd --select
@@ -30,20 +30,18 @@ if exist "%CONFIG_FILE%" (
     )
 )
 
-:: 2. Check local venv beside start-ui.cmd
+:: 2. Check local venv beside start-ui.cmd or in root or parent
 if not defined PYTHON_EXE (
-    if exist "%SCRIPT_DIR%venv\Scripts\pythonw.exe" set "PYTHON_EXE=%SCRIPT_DIR%venv\Scripts\pythonw.exe"
-    if exist "%SCRIPT_DIR%venv\Scripts\python.exe" set "PYTHON_EXE=%SCRIPT_DIR%venv\Scripts\python.exe"
-    if exist "%SCRIPT_DIR%.venv\Scripts\pythonw.exe" set "PYTHON_EXE=%SCRIPT_DIR%.venv\Scripts\pythonw.exe"
-    if exist "%SCRIPT_DIR%.venv\Scripts\python.exe" set "PYTHON_EXE=%SCRIPT_DIR%.venv\Scripts\python.exe"
-)
-
-:: 3. Check parent directory venv
-if not defined PYTHON_EXE (
-    if exist "%SCRIPT_DIR%..\venv\Scripts\pythonw.exe" set "PYTHON_EXE=%SCRIPT_DIR%..\venv\Scripts\pythonw.exe"
-    if exist "%SCRIPT_DIR%..\venv\Scripts\python.exe" set "PYTHON_EXE=%SCRIPT_DIR%..\venv\Scripts\python.exe"
-    if exist "%SCRIPT_DIR%..\.venv\Scripts\pythonw.exe" set "PYTHON_EXE=%SCRIPT_DIR%..\.venv\Scripts\pythonw.exe"
-    if exist "%SCRIPT_DIR%..\.venv\Scripts\python.exe" set "PYTHON_EXE=%SCRIPT_DIR%..\.venv\Scripts\python.exe"
+    if exist "%APP_DIR%venv\Scripts\pythonw.exe" set "PYTHON_EXE=%APP_DIR%venv\Scripts\pythonw.exe"
+    if exist "%APP_DIR%venv\Scripts\python.exe" set "PYTHON_EXE=%APP_DIR%venv\Scripts\python.exe"
+    if exist "%APP_DIR%.venv\Scripts\pythonw.exe" set "PYTHON_EXE=%APP_DIR%.venv\Scripts\pythonw.exe"
+    if exist "%APP_DIR%.venv\Scripts\python.exe" set "PYTHON_EXE=%APP_DIR%.venv\Scripts\python.exe"
+    if exist "%ROOT_DIR%venv\Scripts\pythonw.exe" set "PYTHON_EXE=%ROOT_DIR%venv\Scripts\pythonw.exe"
+    if exist "%ROOT_DIR%venv\Scripts\python.exe" set "PYTHON_EXE=%ROOT_DIR%venv\Scripts\python.exe"
+    if exist "%ROOT_DIR%.venv\Scripts\pythonw.exe" set "PYTHON_EXE=%ROOT_DIR%.venv\Scripts\pythonw.exe"
+    if exist "%ROOT_DIR%.venv\Scripts\python.exe" set "PYTHON_EXE=%ROOT_DIR%.venv\Scripts\python.exe"
+    if exist "%ROOT_DIR%..\venv\Scripts\pythonw.exe" set "PYTHON_EXE=%ROOT_DIR%..\venv\Scripts\pythonw.exe"
+    if exist "%ROOT_DIR%..\venv\Scripts\python.exe" set "PYTHON_EXE=%ROOT_DIR%..\venv\Scripts\python.exe"
 )
 
 :: 4. Check known user and system locations
@@ -114,11 +112,11 @@ if defined PYTHON_EXE (
     )
 )
 
-if not exist "%APP_DIR%\launch_app.pyw" (
-    echo Could not find App\launch_app.pyw. Ensure all files are extracted.
+if not exist "%APP_DIR%launch_app.pyw" (
+    echo Could not find %APP_DIR%launch_app.pyw. Ensure all files are extracted.
     pause
     exit /b 1
 )
 
-start "" "%PYTHON_EXE%" "%APP_DIR%\launch_app.pyw"
+start "" "%PYTHON_EXE%" "%APP_DIR%launch_app.pyw"
 exit /b

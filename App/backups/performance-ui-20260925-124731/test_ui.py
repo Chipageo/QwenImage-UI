@@ -14,7 +14,7 @@ from http.server import ThreadingHTTPServer
 from PIL import Image
 
 from ui_server import State, handler_for, validate, SIZES
-from qwen_backend import QwenBackend, transparency_prompt
+from qwen_backend import QwenBackend
 
 
 def encoded_image(mode="RGBA"):
@@ -120,8 +120,7 @@ class ApiTests(unittest.TestCase):
     def test_generation_edit_download_and_busy(self):
         self.assertEqual(self.call('/')[0], 200)
         self.assertIn('token', self.call('/api/config')[1])
-        status, job = self.call('/api/jobs', dict(prompt='edit', images=[encoded_image()], seed=42,
-                                                use_kv_cache=False, vae_tiling=True, attention_mode='standard'))
+        status, job = self.call('/api/jobs', dict(prompt='edit', images=[encoded_image()], seed=42))
         self.assertEqual(status, 202)
         self.assertEqual(self.call('/api/jobs', dict(prompt='other'))[0], 409)
         self.backend.release.set()
@@ -130,30 +129,13 @@ class ApiTests(unittest.TestCase):
         status, png = self.call(result['url'])
         self.assertEqual(status, 200)
         self.assertEqual(Image.open(io.BytesIO(png)).mode, 'RGBA')
-        self.assertEqual(Image.open(io.BytesIO(png)).getchannel('A').getextrema(), (128, 128))
-        self.assertEqual(result['transparency'], dict(has_alpha=True, has_transparent_pixels=True))
         self.assertEqual(self.backend.calls[0][1], ['RGBA'])
-        self.assertFalse(self.backend.calls[0][0]['use_kv_cache'])
-        self.assertTrue(result['settings']['vae_tiling'])
-        self.assertEqual(result['settings']['attention_mode'], 'standard')
         self.assertEqual(result['seed'], 42)
         self.assertIn('generation_time', result)
         self.assertIn('duration', result)
         self.assertIn('generation_time_formatted', result)
         self.assertGreaterEqual(result['generation_time'], 0)
         self.assertTrue(result['generation_time_formatted'].endswith('s'))
-
-    def test_opaque_outputs_are_not_reported_as_transparent(self):
-        for mode in ['RGB', 'RGBA']:
-            with self.subTest(mode=mode):
-                def opaque(request, images, output, step_callback=None):
-                    Image.new(mode, (8, 8), 'white').save(output, 'PNG')
-                with patch.object(self.backend, 'generate', opaque):
-                    status, job = self.call('/api/jobs', dict(prompt='cutout', transparent=True))
-                    self.assertEqual(status, 202)
-                    result = self.wait_job(job)
-                self.assertEqual(result['status'], 'complete')
-                self.assertEqual(result['transparency'], dict(has_alpha=mode == 'RGBA', has_transparent_pixels=False))
 
     def test_failure_releases_model_for_retry(self):
         self.backend.release.set()
@@ -217,13 +199,6 @@ class ApiTests(unittest.TestCase):
 
 
 class AdapterTests(unittest.TestCase):
-    def test_transparency_prompt_handles_reused_and_punctuated_text(self):
-        expected = ('This is an RGBA image with transparency. A sticker. '
-                    'The image has alpha channel and the background is transparent.')
-        for prompt in ['A sticker', 'A sticker.', expected, '  ' + expected + '  ']:
-            with self.subTest(prompt=prompt):
-                self.assertEqual(transparency_prompt(prompt), expected)
-
     def test_invalid_numeric_output_is_not_saved_as_success(self):
         import contextlib
         import warnings

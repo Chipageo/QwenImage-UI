@@ -21,7 +21,7 @@ function updateControls() {
   $('generate-label').textContent = busy ? 'Generating…' : references.length ? 'Edit image' : 'Generate';
   $('mode-label').textContent = references.length ? 'Image editing' : 'Text to image';
   $('image-count').textContent = `${references.length} / 10`;
-  for (const id of ['attach','new-chat','new-mobile','prompt','ratio','steps','transparent','cpu-offload','seed-random','memory-mode','attention-mode','kv-cache','vae-tiling','performance-reset']) if ($(id)) $(id).disabled = busy;
+  for (const id of ['attach','new-chat','new-mobile','prompt','ratio','steps','transparent','cpu-offload','seed-random']) if ($(id)) $(id).disabled = busy;
   if ($('seed')) $('seed').disabled = busy || ($('seed-random') && $('seed-random').checked);
   if ($('header-cpu-offload')) $('header-cpu-offload').disabled = busy;
   document.querySelectorAll('.suggestions button').forEach(button => button.disabled = busy);
@@ -63,7 +63,7 @@ document.addEventListener('dragleave', event => { if (dragDepth) dragDepth--; if
 document.addEventListener('drop', event => { event.preventDefault(); dragDepth = 0; $('drop-overlay').hidden = true; addFiles([...event.dataTransfer.files]); });
 window.addEventListener('blur', () => { dragDepth = 0; $('drop-overlay').hidden = true; });
 document.querySelectorAll('[data-prompt]').forEach(button => button.onclick = () => { $('prompt').value = button.dataset.prompt; $('transparent').checked = button.dataset.transparent === 'true'; updateNote(); $('prompt').focus(); });
-function updateNote() { $('composer-note').textContent = $('transparent').checked ? 'Requests a transparent background using Qwen’s recommended prompt. PNG preserves alpha; the result shows whether transparent pixels were generated.' : 'Drop images anywhere · PNG, JPG, WebP · Ctrl / ⌘ + Enter to generate'; }
+function updateNote() { $('composer-note').textContent = $('transparent').checked ? 'Adds Qwen’s recommended transparency wording to your prompt. Output depends on the model.' : 'Drop images anywhere · PNG, JPG, WebP · Ctrl / ⌘ + Enter to generate'; }
 $('transparent').onchange = updateNote;
 $('prompt').addEventListener('keydown', event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); if (!busy) $('composer').requestSubmit(); } });
 $('new-chat').onclick = () => {
@@ -135,15 +135,6 @@ function makeMessage(prompt, refs, request) {
         $('transparent').checked = request.transparent;
         updateNote();
       }
-    }
-    if (request) {
-      $('seed').value = request.seed ?? 42;
-      $('seed-random').checked = false;
-      $('memory-mode').value = request.cpu_offload === false ? 'gpu' : 'offload';
-      $('attention-mode').value = request.attention_mode || 'standard';
-      $('kv-cache').checked = request.use_kv_cache !== false;
-      $('vae-tiling').checked = request.vae_tiling === true;
-      updatePerformance(); updateControls();
     }
     $('prompt').focus();
     const span = reuseBtn.querySelectorAll('span')[1];
@@ -287,30 +278,17 @@ function updateCpuOffloadUI(source) {
   if (isOffload) {
     if (sidebar) sidebar.classList.remove('off');
     if (sidebarTitle) sidebarTitle.textContent = 'Memory Optimized';
-    if (sidebarSub) sidebarSub.textContent = 'Selected: CPU offload · BF16';
+    if (sidebarSub) sidebarSub.textContent = 'GPU offload active · bfloat16';
     if (sidebarDot) sidebarDot.classList.remove('off');
   } else {
     if (sidebar) sidebar.classList.add('off');
     if (sidebarTitle) sidebarTitle.textContent = 'Full GPU Mode';
-    if (sidebarSub) sidebarSub.textContent = 'Selected: full GPU · >30 GB weights';
+    if (sidebarSub) sidebarSub.textContent = 'No offload · Requires ≥24GB VRAM';
     if (sidebarDot) sidebarDot.classList.add('off');
   }
 }
 if ($('cpu-offload')) $('cpu-offload').onchange = e => updateCpuOffloadUI(e.target);
 if ($('header-cpu-offload')) $('header-cpu-offload').onchange = e => updateCpuOffloadUI(e.target);
-
-function updatePerformance() {
-  $('header-cpu-offload').checked = $('memory-mode').value === 'offload';
-  updateCpuOffloadUI();
-  const modes = {standard: 'Standard', compiled: 'Compiled standard', flex: 'Compiled Flex'};
-  $('performance-summary').textContent = `${$('memory-mode').value === 'offload' ? 'CPU offload' : 'Full GPU'} · ${modes[$('attention-mode').value]}`;
-  document.querySelector('.memory-tag').lastChild.textContent = $('memory-mode').value === 'offload' ? ' CPU OFFLOAD' : ' FULL GPU';
-}
-for (const id of ['memory-mode', 'attention-mode', 'kv-cache', 'vae-tiling']) $(id).onchange = updatePerformance;
-$('performance-reset').onclick = () => {
-  $('memory-mode').value = 'offload'; $('attention-mode').value = 'standard';
-  $('kv-cache').checked = true; $('vae-tiling').checked = false; updatePerformance();
-};
 
 if ($('seed-random')) {
   $('seed-random').onchange = () => {
@@ -343,10 +321,7 @@ $('composer').onsubmit = async event => {
     steps: Number($('steps').value),
     seed: isRandom ? null : Number($('seed').value),
     transparent: $('transparent').checked,
-    cpu_offload: $('memory-mode').value === 'offload',
-    attention_mode: $('attention-mode').value,
-    use_kv_cache: $('kv-cache').checked,
-    vae_tiling: $('vae-tiling').checked
+    cpu_offload: $('header-cpu-offload') ? $('header-cpu-offload').checked : ($('cpu-offload') ? $('cpu-offload').checked : true)
   };
   busy = true; renderPreviews(); status('Working locally', 'working');
   let message;
@@ -354,7 +329,6 @@ $('composer').onsubmit = async event => {
     request.images = await Promise.all(references.map(ref => readBase64(ref.file)));
     message = makeMessage(prompt, references, request);
     const initial = await api('/api/jobs', {method:'POST', headers:{'Content-Type':'application/json','X-Qwen-Token':config.token}, body:JSON.stringify(request)});
-    request.seed = initial.seed;
     const job = await pollJob(initial.id, message, request.steps);
 
     const heading = document.createElement('div'); heading.className = 'message-heading'; heading.textContent = 'Qwen Image 2.1';
@@ -368,10 +342,7 @@ $('composer').onsubmit = async event => {
       fetch(`/api/open/${job.id}.png`).catch(console.error);
     };
 
-    const transparencyText = job.transparency
-      ? (job.transparency.has_transparent_pixels ? ' · PNG contains transparent pixels' : (request.transparent ? ' · Opaque PNG — model did not generate transparent pixels' : ''))
-      : (request.transparent ? ' · Transparency requested (unverified)' : '');
-    const metadata = document.createElement('div'); metadata.className = 'metadata'; metadata.textContent = `${job.width} × ${job.height} · ${request.steps} steps${timePart} · Seed ${job.seed}${transparencyText}`;
+    const metadata = document.createElement('div'); metadata.className = 'metadata'; metadata.textContent = `${job.width} × ${job.height} · ${request.steps} steps${timePart} · Seed ${job.seed}${request.transparent ? ' · Transparency requested' : ''}`;
     if (timeStr) metadata.title = `Generation time: ${timeStr}`;
     const actions = document.createElement('div'); actions.className = 'result-actions';
     const download = document.createElement('a'); download.href = job.url; download.download = `qwen-${job.seed}.png`; download.textContent = 'Download PNG';
@@ -383,13 +354,7 @@ $('composer').onsubmit = async event => {
     reuse.onclick = async () => { if (busy) return; try { const response = await fetch(job.url); if (!response.ok) throw new Error('Could not load the saved image.'); const blob = await response.blob(); await addFiles([new File([blob], `qwen-${job.seed}.png`, {type:'image/png'})]); $('prompt').focus(); } catch (error) { showError(error.message); } };
     actions.append(download, openSystem, reuse);
 
-    const metrics = document.createElement('div'); metrics.className = 'run-metrics';
-    const m = job.metrics || {};
-    const mode = {standard: 'Standard', compiled: 'Compiled standard', flex: 'Compiled Flex'}[request.attention_mode];
-    metrics.textContent = `${request.cpu_offload ? 'CPU offload' : 'Full GPU'} · ${mode} · KV cache ${request.use_kv_cache ? 'ON' : 'OFF'} · VAE tiling ${request.vae_tiling ? 'ON' : 'OFF'}`;
-    if (typeof m.setup_s === 'number') metrics.textContent += `\nSetup ${m.setup_s}s${m.reloaded ? ' (model reloaded)' : ' (reused)'} · Prepare + first step ${m.first_step_s ?? '—'}s · Remaining steps ${m.remaining_steps_s ?? '—'}s · Finish ${m.finish_s ?? '—'}s`;
-    if (typeof m.peak_vram_gib === 'number') metrics.textContent += `\nPeak PyTorch GPU memory: ${m.peak_vram_gib} GiB (excludes other apps)`;
-    message.wrapper.replaceWith(heading, image, metadata, metrics, actions);
+    message.wrapper.replaceWith(heading, image, metadata, actions);
     $('prompt').value = ''; clearReferences(); status('Model ready');
   } catch (error) {
     if (message && message.placeholder) {
@@ -503,10 +468,7 @@ async function connect() {
       $('env-path').title = `Environment: ${config.venv_root}`;
     }
     status(config.busy ? 'Model busy in another request' : config.loaded ? 'Model ready' : 'Local · ready'); updateControls();
-    const support = config.acceleration || {available: false, reason: 'Restart the updated server to check compiler support.'};
-    for (const option of $('attention-mode').options) if (option.value !== 'standard') option.disabled = !support.available;
-    $('acceleration-note').textContent = support.available ? 'Compiler package detected; compatibility is verified on first generation. First compilation may take several minutes.' : support.reason;
-    updatePerformance();
+    updateCpuOffloadUI();
     initHeartbeat();
     initStatsMonitor();
   } catch (error) {

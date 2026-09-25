@@ -7,18 +7,6 @@ import warnings
 from pathlib import Path
 
 
-def transparency_prompt(prompt):
-    """Apply Qwen's documented RGBA wording once, including on reused prompts."""
-    prefix = "This is an RGBA image with transparency."
-    suffix = "The image has alpha channel and the background is transparent."
-    prompt = prompt.strip()
-    if not prompt.startswith(prefix):
-        prompt = prefix + " " + prompt
-    if not prompt.endswith(suffix):
-        prompt += (" " if prompt.endswith((".", "!", "?")) else ". ") + suffix
-    return prompt
-
-
 def acceleration_support():
     try:
         available = importlib.util.find_spec("triton") is not None
@@ -104,7 +92,8 @@ class QwenBackend:
 
         prompt = request["prompt"]
         if request.get("transparent"):
-            prompt = transparency_prompt(prompt)
+            prompt = ("This is an RGBA image with transparency. " + prompt
+                      + ". The image has alpha channel and the background is transparent.")
         kwargs = dict(prompt=prompt, width=request["width"], height=request["height"],
                       num_inference_steps=request["steps"],
                       generator=torch.Generator("cuda").manual_seed(request["seed"]))

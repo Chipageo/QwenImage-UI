@@ -9,7 +9,8 @@ ui_logs/
 *.lock
 
 # Generated outputs
-Generate images/
+Generate images/*
+!Generate images/.gitkeep
 outputs/
 *.png
 

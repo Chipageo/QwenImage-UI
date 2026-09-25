@@ -54,15 +54,6 @@ Set-Location .\App
 სრული ფოლდერის სხვა ადგილას გადატანა იმავე კომპიუტერზე იყენებს ფარდობით მისამართებს. სხვა კომპიუტერზე გადასატანად არსებული საბაზისო Python, მოდელის ქეში და GPU გარემოც ცალკე მოსაწყობია.
 
 
-## Transparent PNG
-
-Transparent uses the [official Qwen-Image-2.1 RGBA prompt format](https://github.com/QwenLM/Qwen-Image-2.1#transparent-image-generation-rgba).
-It requests native transparency for generation and editing; it is not a separate background-removal filter.
-The output is saved as PNG without flattening alpha. Existing RGBA reference images keep their alpha channel.
-The result checks the saved PNG and reports whether any pixels have alpha below 255. An RGBA file can still be fully opaque; in that case, a transparency request displays an explicit opaque-output notice.
-Already-wrapped prompts are not wrapped again. Transparent OFF leaves your prompt unchanged, so explicit transparency instructions you type still apply.
-Restart the app after this update.
-
 ## Performance & testing
 
 Open the panel above the prompt. Settings apply to the next generation.

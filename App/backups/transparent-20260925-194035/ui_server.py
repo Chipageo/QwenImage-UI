@@ -276,17 +276,11 @@ class State:
                 self.backend.generate(request, images, self.output_dir / (job_id + ".png"), step_callback=on_step)
             else:
                 self.backend.generate(request, images, self.output_dir / (job_id + ".png"))
-            # Inspect the saved PNG: an alpha channel alone can still be fully opaque.
-            with Image.open(self.output_dir / (job_id + ".png")) as saved:
-                has_alpha = "A" in saved.getbands() or "transparency" in saved.info
-                alpha_range = saved.convert("RGBA").getchannel("A").getextrema() if has_alpha else None
-                transparency = dict(has_alpha=has_alpha,
-                                    has_transparent_pixels=bool(alpha_range and alpha_range[0] < 255))
             duration = round(time.monotonic() - start_time, 2)
             time_str = f"{duration:.2f}s" if duration < 60 else f"{int(duration // 60)}m {duration % 60:.1f}s"
             result = dict(status="complete", progress=100, step=request["steps"], url="/outputs/" + job_id + ".png",
                           duration=duration, generation_time=duration, generation_time_formatted=time_str,
-                          metrics=getattr(self.backend, "last_metrics", {}), transparency=transparency)
+                          metrics=getattr(self.backend, "last_metrics", {}))
         except Exception as exc:
             traceback.print_exc()
             duration = round(time.monotonic() - start_time, 2)

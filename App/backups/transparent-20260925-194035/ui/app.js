@@ -63,7 +63,7 @@ document.addEventListener('dragleave', event => { if (dragDepth) dragDepth--; if
 document.addEventListener('drop', event => { event.preventDefault(); dragDepth = 0; $('drop-overlay').hidden = true; addFiles([...event.dataTransfer.files]); });
 window.addEventListener('blur', () => { dragDepth = 0; $('drop-overlay').hidden = true; });
 document.querySelectorAll('[data-prompt]').forEach(button => button.onclick = () => { $('prompt').value = button.dataset.prompt; $('transparent').checked = button.dataset.transparent === 'true'; updateNote(); $('prompt').focus(); });
-function updateNote() { $('composer-note').textContent = $('transparent').checked ? 'Requests a transparent background using Qwen’s recommended prompt. PNG preserves alpha; the result shows whether transparent pixels were generated.' : 'Drop images anywhere · PNG, JPG, WebP · Ctrl / ⌘ + Enter to generate'; }
+function updateNote() { $('composer-note').textContent = $('transparent').checked ? 'Adds Qwen’s recommended transparency wording to your prompt. Output depends on the model.' : 'Drop images anywhere · PNG, JPG, WebP · Ctrl / ⌘ + Enter to generate'; }
 $('transparent').onchange = updateNote;
 $('prompt').addEventListener('keydown', event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); if (!busy) $('composer').requestSubmit(); } });
 $('new-chat').onclick = () => {
@@ -368,10 +368,7 @@ $('composer').onsubmit = async event => {
       fetch(`/api/open/${job.id}.png`).catch(console.error);
     };
 
-    const transparencyText = job.transparency
-      ? (job.transparency.has_transparent_pixels ? ' · PNG contains transparent pixels' : (request.transparent ? ' · Opaque PNG — model did not generate transparent pixels' : ''))
-      : (request.transparent ? ' · Transparency requested (unverified)' : '');
-    const metadata = document.createElement('div'); metadata.className = 'metadata'; metadata.textContent = `${job.width} × ${job.height} · ${request.steps} steps${timePart} · Seed ${job.seed}${transparencyText}`;
+    const metadata = document.createElement('div'); metadata.className = 'metadata'; metadata.textContent = `${job.width} × ${job.height} · ${request.steps} steps${timePart} · Seed ${job.seed}${request.transparent ? ' · Transparency requested' : ''}`;
     if (timeStr) metadata.title = `Generation time: ${timeStr}`;
     const actions = document.createElement('div'); actions.className = 'result-actions';
     const download = document.createElement('a'); download.href = job.url; download.download = `qwen-${job.seed}.png`; download.textContent = 'Download PNG';

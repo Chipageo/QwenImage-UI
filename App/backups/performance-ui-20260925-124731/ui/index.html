@@ -15,7 +15,7 @@
     <div class="sidebar-memory" id="sidebar-memory" title="Model memory optimization status">
       <div class="memory-tag"><span class="badge-dot" id="sidebar-badge-dot"></span> CPU OFFLOAD</div>
       <div class="memory-title" id="sidebar-memory-title">Memory Optimized</div>
-      <div class="memory-sub" id="sidebar-memory-sub">Selected: CPU offload · BF16</div>
+      <div class="memory-sub" id="sidebar-memory-sub">GPU offload active · bfloat16</div>
     </div>
     <div class="sidebar-bottom"><span class="model-icon">Q</span><div>Qwen-Image-2.1<small id="env-path" title="Active model environment">Local model · 7B visual core</small></div></div>
   </aside>
@@ -23,7 +23,7 @@
     <header>
       <div class="header-left">
         <span>Image studio <span class="header-tag">2.1</span></span>
-        <div class="header-toggle-wrap" hidden>
+        <div class="header-toggle-wrap">
           <span class="header-toggle-desc">CPU OFFLOAD</span>
           <label class="switch-pill mini" title="Toggle CPU Offload on/off">
             <input id="header-cpu-offload" type="checkbox" checked>
@@ -91,23 +91,6 @@
           </div>
           <label class="transparency"><input id="transparent" type="checkbox"> Transparent</label>
         </div>
-        <details class="performance-panel" id="performance-panel">
-          <summary>Performance &amp; testing <span id="performance-summary">CPU offload · Standard</span></summary>
-          <div class="performance-grid">
-            <label>Memory mode
-              <select id="memory-mode"><option value="offload">CPU offload · recommended for 4090</option><option value="gpu">Full GPU · needs more than 30 GB VRAM</option></select>
-              <small>Changing this reloads the model on the next generation. Full BF16 weights do not fit in 24 GB.</small>
-            </label>
-            <label>Compute mode
-              <select id="attention-mode"><option value="standard">Standard · no compilation</option><option value="compiled">Compiled standard · experimental</option><option value="flex">Compiled Flex Attention · experimental</option></select>
-              <small id="acceleration-note">Checking compiler support…</small>
-            </label>
-            <label class="performance-check"><span><input type="checkbox" id="kv-cache" checked> KV cache</span><small>Recommended ON. OFF is useful for comparison and usually slower; small output differences are possible.</small></label>
-            <label class="performance-check"><span><input type="checkbox" id="vae-tiling"> VAE tiling</span><small>Reduces memory used to encode/decode large images. May be slower and may slightly change the output.</small></label>
-          </div>
-          <div class="performance-actions"><button type="button" id="performance-reset">Restore baseline</button><span>BF16 · CFG off · Keep the same prompt, seed, size and steps for comparisons. Compare the second run of each mode.</span></div>
-          <p class="performance-help">Settings apply to the next image. Compilation can make the first run much slower and may repeat for new sizes or reference counts. Each result records its settings and timings.</p>
-        </details>
         <form id="composer">
           <div id="previews" aria-label="Attached reference images"></div>
           <label class="sr-only" for="prompt">Describe your image or edits</label>

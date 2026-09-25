@@ -6,7 +6,8 @@ Set fso = CreateObject("Scripting.FileSystemObject")
 root = fso.GetParentFolderName(WScript.ScriptFullName)
 launcher = fso.BuildPath(root, "launch_app.pyw")
 configFile = fso.BuildPath(root, "venv_path.txt")
-startCmd = fso.BuildPath(fso.GetParentFolderName(root), "start-ui.cmd")
+startCmd = fso.BuildPath(root, "start-ui.cmd")
+If Not fso.FileExists(startCmd) Then startCmd = fso.BuildPath(fso.GetParentFolderName(root), "start-ui.cmd")
 
 python = ""
 

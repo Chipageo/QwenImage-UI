@@ -52,28 +52,3 @@ Set-Location .\App
 ```
 
 სრული ფოლდერის სხვა ადგილას გადატანა იმავე კომპიუტერზე იყენებს ფარდობით მისამართებს. სხვა კომპიუტერზე გადასატანად არსებული საბაზისო Python, მოდელის ქეში და GPU გარემოც ცალკე მოსაწყობია.
-
-
-## Transparent PNG
-
-Transparent uses the [official Qwen-Image-2.1 RGBA prompt format](https://github.com/QwenLM/Qwen-Image-2.1#transparent-image-generation-rgba).
-It requests native transparency for generation and editing; it is not a separate background-removal filter.
-The output is saved as PNG without flattening alpha. Existing RGBA reference images keep their alpha channel.
-The result checks the saved PNG and reports whether any pixels have alpha below 255. An RGBA file can still be fully opaque; in that case, a transparency request displays an explicit opaque-output notice.
-Already-wrapped prompts are not wrapped again. Transparent OFF leaves your prompt unchanged, so explicit transparency instructions you type still apply.
-Restart the app after this update.
-
-## Performance & testing
-
-Open the panel above the prompt. Settings apply to the next generation.
-
-- CPU offload + Standard + KV cache ON + VAE tiling OFF is the baseline.
-- Full GPU keeps all BF16 components on the GPU. The app rejects cards below 30 GiB because weights alone are approximately that size; larger GPUs still need working memory.
-- Compiled standard and Compiled Flex Attention are experimental. They require Triton in the active Python environment and a working compatible compiler. Detecting the package does not guarantee successful compilation. If unavailable, options are disabled with an explanation. No packages are installed automatically.
-- Changing memory or compute mode reloads the model. Initial compilation happens during generation and can take minutes or repeat for new shapes. Compiler failures clear the pipeline; select Standard to retry.
-- KV cache OFF is a comparison option, usually slower. VAE tiling reduces image encode/decode memory and may affect speed and output slightly.
-- Results show selected settings, setup time, preparation plus first step, remaining steps, finish time, and peak PyTorch allocated GPU memory. First-step time includes prompt processing, transfers, and any lazy compilation. It does not isolate those costs. Memory excludes other applications.
-- Reuse restores the generated seed and performance settings. For fair tests use the same prompt, seed, reference images, size, and steps, and compare the second generation in each mode. Restore baseline only resets performance options.
-- Restart Qwen Image Studio after installing this update. Existing image files and model weights are unchanged.
-
-Tests: run `python -m unittest discover -s App -q` from the application root with its existing environment. Automated tests mock GPU execution; compilation speed and compatibility must be measured separately on the target system.

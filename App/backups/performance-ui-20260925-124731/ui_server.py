@@ -18,7 +18,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from PIL import Image, ImageOps
-from qwen_backend import QwenBackend, acceleration_support
+from qwen_backend import QwenBackend
 
 # --- System hardware metrics collector (GPU, CPU, RAM) ---
 class MEMORYSTATUSEX(ctypes.Structure):
@@ -173,13 +173,6 @@ def validate(data):
     cpu_offload = data.get("cpu_offload", True)
     if type(cpu_offload) is not bool:
         cpu_offload = True
-    attention_mode = data.get("attention_mode", "standard")
-    if attention_mode not in ("standard", "compiled", "flex"):
-        raise ValueError("Choose a supported attention mode.")
-    use_kv_cache = data.get("use_kv_cache", True)
-    vae_tiling = data.get("vae_tiling", False)
-    if type(use_kv_cache) is not bool or type(vae_tiling) is not bool:
-        raise ValueError("Cache and VAE tiling options must be booleans.")
     files = data.get("images", [])
     if not isinstance(files, list) or len(files) > 10:
         raise ValueError("Attach up to 10 reference images.")
@@ -206,8 +199,7 @@ def validate(data):
         raise ValueError("Invalid image upload.") from exc
     width, height = RESOLUTION_PRESETS[scale][ratio]
     return dict(prompt=prompt.strip(), scale=scale, ratio=ratio, width=width, height=height,
-                steps=steps, seed=seed, transparent=transparent, cpu_offload=cpu_offload,
-                attention_mode=attention_mode, use_kv_cache=use_kv_cache, vae_tiling=vae_tiling), images
+                steps=steps, seed=seed, transparent=transparent, cpu_offload=cpu_offload), images
 
 
 class State:
@@ -244,8 +236,7 @@ class State:
                        step=0, progress=0,
                        width=request["width"], height=request["height"],
                        ratio=request["ratio"], scale=request["scale"],
-                       start_time=start_monotonic,
-                       settings={key: request[key] for key in ("cpu_offload", "attention_mode", "use_kv_cache", "vae_tiling")})
+                       start_time=start_monotonic)
             # Bound in-memory metadata. PNG outputs remain on disk.
             while len(self.jobs) >= 100:
                 self.jobs.pop(next(iter(self.jobs)))
@@ -276,24 +267,16 @@ class State:
                 self.backend.generate(request, images, self.output_dir / (job_id + ".png"), step_callback=on_step)
             else:
                 self.backend.generate(request, images, self.output_dir / (job_id + ".png"))
-            # Inspect the saved PNG: an alpha channel alone can still be fully opaque.
-            with Image.open(self.output_dir / (job_id + ".png")) as saved:
-                has_alpha = "A" in saved.getbands() or "transparency" in saved.info
-                alpha_range = saved.convert("RGBA").getchannel("A").getextrema() if has_alpha else None
-                transparency = dict(has_alpha=has_alpha,
-                                    has_transparent_pixels=bool(alpha_range and alpha_range[0] < 255))
             duration = round(time.monotonic() - start_time, 2)
             time_str = f"{duration:.2f}s" if duration < 60 else f"{int(duration // 60)}m {duration % 60:.1f}s"
             result = dict(status="complete", progress=100, step=request["steps"], url="/outputs/" + job_id + ".png",
-                          duration=duration, generation_time=duration, generation_time_formatted=time_str,
-                          metrics=getattr(self.backend, "last_metrics", {}), transparency=transparency)
+                          duration=duration, generation_time=duration, generation_time_formatted=time_str)
         except Exception as exc:
             traceback.print_exc()
             duration = round(time.monotonic() - start_time, 2)
             time_str = f"{duration:.2f}s" if duration < 60 else f"{int(duration // 60)}m {duration % 60:.1f}s"
             result = dict(status="failed", error=str(exc)[:1000] or "Generation failed. See the server terminal.",
-                          duration=duration, generation_time=duration, generation_time_formatted=time_str,
-                          metrics=getattr(self.backend, "last_metrics", {}))
+                          duration=duration, generation_time=duration, generation_time_formatted=time_str)
         finally:
             for image in images:
                 image.close()
@@ -340,7 +323,7 @@ def handler_for(state):
                 with state.lock:
                     venv_root = str(Path(sys.executable).parent.parent) if sys.executable else ""
                     self.json(200, dict(token=state.token, ratios=SIZES, resolutions=RESOLUTION_PRESETS,
-                                        memory_opt=True, busy=state.busy, acceleration=acceleration_support(),
+                                        memory_opt=True, busy=state.busy,
                                         loaded=state.backend.pipe is not None, app_root=str(ROOT),
                                         venv_root=venv_root))
             elif path == "/api/stats":

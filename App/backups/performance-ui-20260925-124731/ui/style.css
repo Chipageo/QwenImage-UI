@@ -300,19 +300,3 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden}:root{font-family:Inter
 
 
 
-
-/* Performance controls */
-[hidden] { display: none !important; }
-.performance-panel { margin: 8px 0 12px; border: 1px solid #30303c; border-radius: 12px; background: #18191f; font-size: 12px; }
-.performance-panel summary { cursor: pointer; padding: 12px 14px; color: #e1d9ef; }
-.performance-panel summary span { color: #aaa3b6; margin-left: 12px; font-size: 11px; }
-.performance-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; padding: 4px 14px 12px; max-height: 32vh; overflow: auto; }
-.performance-grid label { display: flex; flex-direction: column; gap: 7px; color: #dedbe7; min-width: 0; }
-.performance-grid select { width: 100%; padding: 8px; color: #eee8fa; background: #24242e; border: 1px solid #454050; border-radius: 6px; }
-.performance-grid small, .performance-help, .performance-actions span { color: #aca6b8; font-size: 11px; line-height: 1.5; }
-.performance-check span { display: flex; align-items: center; gap: 8px; }
-.performance-actions { display: flex; align-items: center; gap: 12px; padding: 0 14px; }
-.performance-actions button { border: 1px solid #51465e; border-radius: 6px; padding: 7px 10px; background: #292331; color: #e9dcfc; cursor: pointer; flex-shrink: 0; }
-.performance-help { margin: 8px 14px 12px; }
-.run-metrics { white-space: pre-line; line-height: 1.7; color: #bcb2cc; font-size: 11px; margin: 8px 0; }
-@media (max-width: 650px) { .performance-grid { grid-template-columns: 1fr; max-height: 25vh; } .performance-panel summary span { display: block; margin: 5px 0 0; } .performance-actions { align-items: flex-start; } }
